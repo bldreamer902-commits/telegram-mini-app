@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Series Entry</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background-color: var(--tg-theme-bg-color, #fff);
+            color: var(--tg-theme-text-color, #000);
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 5px 0 15px 0;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            color: var(--tg-theme-text-color, #000);
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #fff);
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .user-info {
+            font-size: 12px;
+            color: gray;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 style="text-align:center;">Series Data ထည့်ရန်</h2>
+    
+    <div id="userInfo" class="user-info">Loading User...</div>
+
+    <label>Series Name</label>
+    <input type="text" id="series" placeholder="ဇာတ်လမ်းနာမည်">
+
+    <label>Episode</label>
+    <input type="number" id="episode" placeholder="အပိုင်း (ဥပမာ - 1)">
+
+    <label>Line</label>
+    <input type="text" id="line" placeholder="Line စာသား">
+    
+    <button onclick="submitData()" id="btn">Submit Data</button>
+
+    <script>
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+
+        const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+
+        if (tgUser) {
+            document.getElementById("userInfo").innerText = 
+                `User: ${tgUser.first_name} (@${tgUser.username || "NoUsername"})`;
+        } else {
+            document.getElementById("userInfo").innerText = "User not detected";
+        }
+
+        function submitData() {
+            var series = document.getElementById("series").value;
+            var episode = document.getElementById("episode").value;
+            var line = document.getElementById("line").value;
+            var btn = document.getElementById("btn");
+
+            // *** ဒီနေရာမှာ သင့် Apps Script URL ကို ထည့်ပါ ***
+            var scriptURL = "https://script.google.com/macros/s/AKfycbzT7hgWV9WiTfMpXsyRh6tRO4wczCCKL7B5SRRkwwm2CIeeylQjFcC1MGLYaoBxiYU/exec";
+
+            if (series === "" || episode === "" || line === "") {
+                window.Telegram.WebApp.showAlert("ကျေးဇူးပြု၍ အချက်အလက်များ ပြည့်စုံအောင် ဖြည့်ပါ");
+                return;
+            }
+
+            btn.innerText = "Saving...";
+            btn.disabled = true;
+
+            var payload = {
+                series: series,
+                episode: episode,
+                line: line,
+                username: tgUser ? tgUser.username : "N/A",
+                userid: tgUser ? tgUser.id : "N/A"
+            };
+
+            fetch(scriptURL, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(() => {
+                window.Telegram.WebApp.showAlert("Data သိမ်းပြီးပါပြီ။");
+                // Reset Fields
+                document.getElementById("series").value = "";
+                document.getElementById("episode").value = "";
+                document.getElementById("line").value = "";
+                
+                btn.innerText = "Submit Data";
+                btn.disabled = false;
+                
+                // ပြီးရင် App ကို ပိတ်ချင်ရင် အောက်က line ကို ဖွင့်ပေးပါ
+                // window.Telegram.WebApp.close();
+            })
+            .catch(error => {
+                window.Telegram.WebApp.showAlert("Error: " + error);
+                btn.innerText = "Submit Data";
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
