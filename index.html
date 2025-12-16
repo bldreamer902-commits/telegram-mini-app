@@ -3,137 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Series Data Entry</title>
+    <title>My Series List</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: sans-serif;
             padding: 20px;
             background-color: var(--tg-theme-bg-color, #ffffff);
             color: var(--tg-theme-text-color, #000000);
         }
-        h2 { text-align: center; margin-bottom: 5px; }
-        .user-info {
-            font-size: 13px;
-            color: var(--tg-theme-hint-color, #888);
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-top: 15px;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        input {
+        input, button {
             width: 100%;
             padding: 12px;
-            margin-top: 5px;
+            margin-top: 10px;
             box-sizing: border-box;
+            border-radius: 8px;
             border: 1px solid #ccc;
-            border-radius: 8px;
-            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            color: var(--tg-theme-text-color, #000);
-            outline: none;
         }
-        input:focus { border-color: var(--tg-theme-button-color, #3390ec); }
         button {
-            width: 100%;
-            padding: 14px;
-            margin-top: 25px;
             background-color: var(--tg-theme-button-color, #3390ec);
-            color: var(--tg-theme-button-text-color, #ffffff);
+            color: var(--tg-theme-button-text-color, #fff);
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
         }
-        button:disabled { opacity: 0.7; cursor: not-allowed; }
+        /* History ပြမယ့် ဒီဇိုင်း */
+        .history-box {
+            margin-top: 20px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+        .item {
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .item strong { color: var(--tg-theme-button-color, #3390ec); }
     </style>
 </head>
 <body>
 
-    <h2>Series မှတ်တမ်း</h2>
-    <div id="userInfo" class="user-info">Loading User...</div>
+    <h2 style="text-align:center">Series ထည့်ရန်</h2>
 
-    <label>Series Name</label>
-    <input type="text" id="series" placeholder="ဇာတ်လမ်းနာမည်">
-
-    <label>Episode</label>
-    <input type="number" id="episode" placeholder="အပိုင်း (Eg. 1)">
-
-    <label>Line / Note</label>
-    <input type="text" id="line" placeholder="မှတ်ချက် သို့မဟုတ် စာသား">
+    <input type="text" id="series" placeholder="Series Name">
+    <input type="number" id="episode" placeholder="Episode">
+    <input type="text" id="line" placeholder="Line / Note">
     
-    <button onclick="submitData()" id="btn">Save Data</button>
+    <button onclick="submitData()" id="btnSave">Save Data</button>
+
+    <div class="history-box">
+        <button onclick="loadHistory()" id="btnCheck" style="background-color: #555;">Check Last 5 Updates</button>
+        <div id="listArea" style="margin-top:10px;"></div>
+    </div>
 
     <script>
-        // Telegram App ကို Initialize လုပ်ခြင်း
         window.Telegram.WebApp.ready();
         window.Telegram.WebApp.expand();
-
         const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
 
-        // User ပြသခြင်း
-        if (tgUser) {
-            document.getElementById("userInfo").innerText = 
-                `User: ${tgUser.first_name} (@${tgUser.username || "NoUsername"})`;
-        } else {
-            document.getElementById("userInfo").innerText = "User Info: Not Detected (Local Test)";
-        }
+        // *** Apps Script URL ကို ဒီမှာထည့်ပါ ***
+        var scriptURL = "YOUR_WEB_APP_URL_HERE";
 
         function submitData() {
             var series = document.getElementById("series").value;
             var episode = document.getElementById("episode").value;
             var line = document.getElementById("line").value;
-            var btn = document.getElementById("btn");
 
-            // ⚠️ အောက်ပါနေရာမှာ သင့် Google Apps Script URL ကို မဖြစ်မနေ ထည့်ပါ ⚠️
-            var scriptURL = "https://script.google.com/macros/s/AKfycbzT7hgWV9WiTfMpXsyRh6tRO4wczCCKL7B5SRRkwwm2CIeeylQjFcC1MGLYaoBxiYU/exec";
+            if(!series) return alert("Series နာမည်ထည့်ပါ");
 
-            // စစ်ဆေးခြင်း
-            if (!series || !episode || !line) {
-                window.Telegram.WebApp.showAlert("ကျေးဇူးပြု၍ အကွက်အားလုံးကို ဖြည့်ပေးပါ။");
-                return;
-            }
-
-            if (scriptURL === "YOUR_WEB_APP_URL_HERE") {
-                alert("Error: Script URL ထည့်ရန် မေ့နေပါသည်။");
-                return;
-            }
-
-            btn.innerText = "Saving...";
-            btn.disabled = true;
-
-            // Data ပြင်ဆင်ခြင်း (Form Data နည်းလမ်း)
             var formData = new URLSearchParams();
             formData.append("series", series);
             formData.append("episode", episode);
             formData.append("line", line);
             formData.append("username", tgUser ? tgUser.username : "N/A");
             formData.append("userid", tgUser ? tgUser.id : "N/A");
+            // Action မပါရင် Save လို့ သတ်မှတ်ထားသည်
 
-            // Google Sheet သို့ ပို့ခြင်း
-            fetch(scriptURL, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                window.Telegram.WebApp.showAlert("အောင်မြင်ပါသည်။ Data သိမ်းပြီးပါပြီ။");
-                
-                // Form ပြန်ရှင်းခြင်း
+            fetch(scriptURL, { method: 'POST', body: formData })
+            .then(() => {
+                alert("Saved!");
                 document.getElementById("series").value = "";
                 document.getElementById("episode").value = "";
                 document.getElementById("line").value = "";
+                // Save ပြီးရင် List ကိုပါ အလိုလို ပြန်ဆွဲခေါ်မယ်
+                loadHistory(); 
+            });
+        }
+
+        // Data ပြန်စစ်မည့် Function
+        function loadHistory() {
+            var btn = document.getElementById("btnCheck");
+            var list = document.getElementById("listArea");
+            
+            btn.innerText = "Loading All Data...";
+            btn.disabled = true; // ခဏနှိပ်မရအောင် ပိတ်ထားမယ်
+            list.innerHTML = ""; 
+
+            var formData = new URLSearchParams();
+            formData.append("action", "read"); 
+
+            fetch(scriptURL, { method: 'POST', body: formData })
+            .then(response => response.json())
+            .then(data => {
+                btn.innerText = "Refresh History"; // စာသားပြောင်းလိုက်တယ်
+                btn.disabled = false;
                 
-                btn.innerText = "Save Data";
-                btn.disabled = false;
+                if (data.length === 0) {
+                    list.innerHTML = "<p style='text-align:center'>မှတ်တမ်း မရှိသေးပါ</p>";
+                    return;
+                }
+
+                // စာရင်းဘယ်လောက်ရှိလဲ ပြမယ်
+                list.innerHTML = `<p style='text-align:center; color:gray'>စုစုပေါင်း: ${data.length} ခု</p>`;
+
+                data.forEach(item => {
+                    var div = document.createElement("div");
+                    div.className = "item";
+                    // Series Name ကို အပြာရောင်၊ Episode ကို အမည်းရောင်ရင့်ရင့် ပြမယ်
+                    div.innerHTML = `
+                        <div style="display:flex; justify-content:space-between;">
+                            <strong style="color:#3390ec">${item.series}</strong>
+                            <span style="font-weight:bold;">Ep: ${item.episode}</span>
+                        </div>
+                        <div style="margin-top:5px; color:#333;">${item.line}</div>
+                        <div style="margin-top:5px; font-size:11px; color:#888; text-align:right;">
+                            ${item.date}
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
             })
-            .catch(error => {
-                window.Telegram.WebApp.showAlert("Error: " + error);
-                btn.innerText = "Save Data";
+            .catch(err => {
+                btn.innerText = "Check History";
                 btn.disabled = false;
+                alert("Error loading data");
             });
         }
     </script>
