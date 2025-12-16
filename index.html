@@ -70,8 +70,15 @@
             var series = document.getElementById("series").value;
             var episode = document.getElementById("episode").value;
             var line = document.getElementById("line").value;
+            var btn = document.getElementById("btnSave");
 
-            if(!series) return alert("Series နာမည်ထည့်ပါ");
+            if (!series || !episode || !line) {
+                window.Telegram.WebApp.showAlert("အချက်အလက်များ ပြည့်စုံအောင် ဖြည့်ပါ");
+                return;
+            }
+
+            btn.innerText = "Saving...";
+            btn.disabled = true;
 
             var formData = new URLSearchParams();
             formData.append("series", series);
@@ -79,26 +86,40 @@
             formData.append("line", line);
             formData.append("username", tgUser ? tgUser.username : "N/A");
             formData.append("userid", tgUser ? tgUser.id : "N/A");
-            // Action မပါရင် Save လို့ သတ်မှတ်ထားသည်
+            // Action မပါရင် Save လို့ Backend က သိပါတယ်
 
-            fetch(scriptURL, { method: 'POST', body: formData })
+            fetch(scriptURL, {
+                method: 'POST',
+                body: formData
+            })
             .then(() => {
-                alert("Saved!");
+                window.Telegram.WebApp.showAlert("Data သိမ်းပြီးပါပြီ။");
+                
+                // Form တွေကို ပြန်ရှင်းမယ်
                 document.getElementById("series").value = "";
                 document.getElementById("episode").value = "";
                 document.getElementById("line").value = "";
-                // Save ပြီးရင် List ကိုပါ အလိုလို ပြန်ဆွဲခေါ်မယ်
-                loadHistory(); 
+                
+                // ခလုတ်စာသား ပြန်ပြင်မယ်
+                btn.innerText = "Save Data";
+                btn.disabled = false;
+
+                // ❌ loadHistory();  <-- ဒီကြောင်းကို ဖြုတ်လိုက်ပါပြီ (Auto Refresh မလုပ်တော့ပါ)
+            })
+            .catch(error => {
+                window.Telegram.WebApp.showAlert("Error: " + error);
+                btn.innerText = "Save Data";
+                btn.disabled = false;
             });
         }
 
-        // Data ပြန်စစ်မည့် Function
+        // Manual Refresh လုပ်မှသာ အလုပ်လုပ်မည့် Function
         function loadHistory() {
             var btn = document.getElementById("btnCheck");
             var list = document.getElementById("listArea");
             
-            btn.innerText = "Loading All Data...";
-            btn.disabled = true; // ခဏနှိပ်မရအောင် ပိတ်ထားမယ်
+            btn.innerText = "Loading...";
+            btn.disabled = true;
             list.innerHTML = ""; 
 
             var formData = new URLSearchParams();
@@ -107,7 +128,7 @@
             fetch(scriptURL, { method: 'POST', body: formData })
             .then(response => response.json())
             .then(data => {
-                btn.innerText = "Refresh History"; // စာသားပြောင်းလိုက်တယ်
+                btn.innerText = "Refresh History"; // ခလုတ်စာသား
                 btn.disabled = false;
                 
                 if (data.length === 0) {
@@ -115,13 +136,11 @@
                     return;
                 }
 
-                // စာရင်းဘယ်လောက်ရှိလဲ ပြမယ်
-                list.innerHTML = `<p style='text-align:center; color:gray'>စုစုပေါင်း: ${data.length} ခု</p>`;
+                list.innerHTML = `<p style='text-align:center; color:gray; font-size:12px'>နောက်ဆုံးရ Data ${data.length} ခု</p>`;
 
                 data.forEach(item => {
                     var div = document.createElement("div");
                     div.className = "item";
-                    // Series Name ကို အပြာရောင်၊ Episode ကို အမည်းရောင်ရင့်ရင့် ပြမယ်
                     div.innerHTML = `
                         <div style="display:flex; justify-content:space-between;">
                             <strong style="color:#3390ec">${item.series}</strong>
@@ -136,9 +155,9 @@
                 });
             })
             .catch(err => {
-                btn.innerText = "Check History";
+                btn.innerText = "Refresh History";
                 btn.disabled = false;
-                alert("Error loading data");
+                window.Telegram.WebApp.showAlert("History ဆွဲမရပါ (Connection စစ်ပါ)");
             });
         }
     </script>
