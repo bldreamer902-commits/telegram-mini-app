@@ -15,9 +15,17 @@
         
         /* History Styles */
         .history-box { margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px; }
-        .item { background-color: #f9f9f9; padding: 12px; margin-bottom: 10px; border-radius: 8px; font-size: 14px; border-left: 4px solid #3390ec; }
-        .item-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .item-rate { background: #eee; color: #333; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+        
+        /* Item Box Design */
+        .item { 
+            background-color: #f9f9f9; 
+            padding: 12px; 
+            margin-bottom: 10px; 
+            border-radius: 8px; 
+            font-size: 14px; 
+            border-left: 4px solid #3390ec; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
     </style>
 </head>
 <body>
@@ -51,7 +59,6 @@
 
         window.onload = function() { fetchLists(); };
 
-        // Series List တစ်ခုတည်းကိုပဲ ဆွဲတော့မယ် (Rate မလိုတော့လို့)
         function fetchLists() {
             var formData = new URLSearchParams();
             formData.append("action", "getLists");
@@ -91,11 +98,8 @@
             formData.append("series", series);
             formData.append("episode", episode);
             formData.append("line", line || "-");
-            
-            // Input မှာ မပါတော့ပေမယ့် Backend က နေရာမရွေ့အောင် အလွတ် (-) ပို့ပေးရပါမယ်
             formData.append("rate", "-"); 
             formData.append("sum", "-");
-            
             formData.append("username", tgUser ? tgUser.username : "N/A");
             formData.append("userid", tgUser ? tgUser.id : "N/A");
 
@@ -136,21 +140,25 @@
                 list.innerHTML = `<p style='text-align:center;color:gray;font-size:12px'>${data.length} ခု တွေ့သည်</p>`;
                 
                 data.forEach(item => {
-                    // Rate နဲ့ Sum က အလွတ်ဖြစ်နေရင် (-) လို့ပဲ ပေါ်နေပါမယ်
-                    // Sheet ထဲမှာ ဝင်ပြင်ထားရင်တော့ ပြင်ထားတဲ့အတိုင်း ပေါ်ပါမယ်
                     var div = document.createElement("div");
                     div.className = "item";
+                    
+                    // ဒီနေရာမှာ Layout ပြင်ထားပါတယ်
                     div.innerHTML = `
-                        <div class="item-header">
-                            <strong style="color:#3390ec">${item.series}</strong>
-                            <span class="item-rate">Rating: ${item.rate}</span>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:5px;">
+                            <strong style="color:#3390ec; font-size:15px;">${item.series}</strong>
+                            <span style="font-weight:bold; color:#555;">Ep: ${item.episode}</span>
                         </div>
-                        <div style="font-weight:500;">Ep: ${item.episode}</div>
-                        <div style="color:#555; margin-top:5px;">"${item.line}"</div>
-                        <div style="margin-top:5px; color:#333; border-top:1px dashed #ddd; padding-top:5px;">
-                            <small>📝 Summary:</small><br>${item.sum}
+                        
+                        <div style="font-size:13px; color:#333; background:#fff; padding:8px; border-radius:6px; border:1px solid #e0e0e0;">
+                            ${item.line} <span style="color:#aaa;">×</span> 
+                            <b>${item.rate}</b> <span style="color:#aaa;">=</span> 
+                            ${item.sum}
                         </div>
-                        <div style="font-size:11px;color:#999;text-align:right; margin-top:5px;">${item.date}</div>
+
+                        <div style="font-size:10px; color:#aaa; text-align:right; margin-top:5px;">
+                            ${item.date}
+                        </div>
                     `;
                     list.appendChild(div);
                 });
