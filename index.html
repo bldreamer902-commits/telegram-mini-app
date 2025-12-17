@@ -59,14 +59,26 @@
     </div>
 
     <script>
+        // ၁။ စစချင်း ကုဒ်အလုပ်လုပ်လား စစ်မယ်
+        alert("Step 1: Code Started"); 
+
         window.Telegram.WebApp.ready();
         window.Telegram.WebApp.expand();
-        const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+        
+        // ၂။ Telegram နဲ့ ချိတ်မိလား စစ်မယ်
+        if(window.Telegram.WebApp.initDataUnsafe.user) {
+             // alert("Step 2: User Found"); // မျက်စိနောက်မှာစိုးလို့ ပိတ်ထားလိုက်တယ် (လိုရင် ပြန်ဖွင့်ပါ)
+        } else {
+             alert("Step 2: User Not Found (Local Test?)");
+        }
 
-        // *** Apps Script URL ကို ဒီမှာထည့်ပါ ***
+        const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+        
+        // သင့် Link အမှန်ကို ဒီမှာ ထည့်ထားပေးပါတယ်
         var scriptURL = "https://script.google.com/macros/s/AKfycbzT7hgWV9WiTfMpXsyRh6tRO4wczCCKL7B5SRRkwwm2CIeeylQjFcC1MGLYaoBxiYU/exec";
 
         function submitData() {
+            alert("Step 3: Button Clicked");
             var series = document.getElementById("series").value;
             var episode = document.getElementById("episode").value;
             var line = document.getElementById("line").value;
@@ -86,13 +98,12 @@
             formData.append("line", line);
             formData.append("username", tgUser ? tgUser.username : "N/A");
             formData.append("userid", tgUser ? tgUser.id : "N/A");
-            // Action မပါရင် Save လို့ Backend က သိပါတယ်
 
-            fetch(scriptURL, {
-                method: 'POST',
-                body: formData
-            })
+            // Fetch ကို ပြင်ဆင်ထားသည်
+            fetch(scriptURL, { method: 'POST', body: formData })
             .then(() => {
+                alert("Step 4: Success!"); // ၄။ အောင်မြင်ကြောင်း Alert အရင်ပြမယ်
+                
                 window.Telegram.WebApp.showAlert("Data သိမ်းပြီးပါပြီ။");
                 
                 // Form တွေကို ပြန်ရှင်းမယ်
@@ -103,10 +114,10 @@
                 // ခလုတ်စာသား ပြန်ပြင်မယ်
                 btn.innerText = "Save Data";
                 btn.disabled = false;
-
-                // ❌ loadHistory();  <-- ဒီကြောင်းကို ဖြုတ်လိုက်ပါပြီ (Auto Refresh မလုပ်တော့ပါ)
             })
             .catch(error => {
+                alert("Error: " + error); // ၅။ Error တက်ရင် Alert ပြမယ်
+                
                 window.Telegram.WebApp.showAlert("Error: " + error);
                 btn.innerText = "Save Data";
                 btn.disabled = false;
@@ -128,7 +139,7 @@
             fetch(scriptURL, { method: 'POST', body: formData })
             .then(response => response.json())
             .then(data => {
-                btn.innerText = "Refresh History"; // ခလုတ်စာသား
+                btn.innerText = "Refresh History"; 
                 btn.disabled = false;
                 
                 if (data.length === 0) {
@@ -158,6 +169,7 @@
                 btn.innerText = "Refresh History";
                 btn.disabled = false;
                 window.Telegram.WebApp.showAlert("History ဆွဲမရပါ (Connection စစ်ပါ)");
+                alert("History Error: " + err); // Debug အတွက် ထပ်ဖြည့်ထားသည်
             });
         }
     </script>
