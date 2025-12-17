@@ -6,135 +6,81 @@
     <title>My Series Log</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            padding: 20px;
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-        }
-        h2 { text-align: center; margin-bottom: 20px; }
+        body { font-family: sans-serif; padding: 20px; background-color: #fff; }
         
-        /* Input Styles */
-        label { display: block; margin-top: 15px; font-weight: 500; font-size: 14px; color: var(--tg-theme-hint-color, #888); }
-        input, button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 5px;
-            box-sizing: border-box;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            outline: none;
-            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            color: var(--tg-theme-text-color, #000);
-        }
-        input:focus { border-color: var(--tg-theme-button-color, #3390ec); }
-
-        /* Button Styles */
-        button {
-            background-color: var(--tg-theme-button-color, #3390ec);
-            color: var(--tg-theme-button-text-color, #fff);
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 25px;
-            font-size: 16px;
-        }
-        button:disabled { opacity: 0.7; cursor: wait; }
-
-        /* History Section */
+        /* Input Form Styles */
+        label { display: block; margin-top: 15px; font-weight: 500; font-size: 14px; color: #888; }
+        input, button { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background-color: #3390ec; color: #fff; border: none; font-weight: bold; cursor: pointer; margin-top: 25px; }
+        
+        /* History Styles */
         .history-box { margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px; }
-        .btn-secondary { background-color: #6c757d; margin-top: 0; }
-        
-        .item {
-            background-color: var(--tg-theme-secondary-bg-color, #f9f9f9);
-            padding: 12px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            border-left: 4px solid var(--tg-theme-button-color, #3390ec);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
+        .item { background-color: #f9f9f9; padding: 12px; margin-bottom: 10px; border-radius: 8px; font-size: 14px; border-left: 4px solid #3390ec; }
         .item-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .item-series { font-weight: bold; color: var(--tg-theme-button-color, #3390ec); }
-        .item-ep { font-weight: bold; }
-        .item-date { font-size: 11px; color: #999; text-align: right; margin-top: 5px; }
+        .item-rate { background: #eee; color: #333; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
     </style>
 </head>
 <body>
 
-    <h2>Series မှတ်တမ်း</h2>
+    <h2 style="text-align:center">Series မှတ်တမ်း</h2>
 
     <label>Series Name</label>
     <input list="series-list" id="series" placeholder="ဇာတ်ကား ရိုက်ရှာပါ...">
-    <datalist id="series-list">
-        <option value="Loading List...">
-    </datalist>
+    <datalist id="series-list"><option value="Loading..."></datalist>
 
     <label>Episode</label>
     <input type="number" id="episode" placeholder="အပိုင်း (Eg. 1)">
 
-    <label>Line / Note</label>
-    <input type="text" id="line" placeholder="မှတ်ချက်">
+    <label>Line / Dialog</label>
+    <input type="text" id="line" placeholder="ဇာတ်ဝင်စကား">
     
     <button onclick="submitData()" id="btnSave">Save Data</button>
 
     <div class="history-box">
-        <button onclick="loadHistory()" id="btnCheck" class="btn-secondary">Check My History</button>
+        <button onclick="loadHistory()" id="btnCheck" style="background-color: #6c757d;">Check My History</button>
         <div id="listArea" style="margin-top:15px;"></div>
     </div>
 
     <script>
-        // Telegram App Initialization
         window.Telegram.WebApp.ready();
         window.Telegram.WebApp.expand();
         const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
 
-        // ⚠️⚠️⚠️ သင့် APPS SCRIPT URL ကို ဒီနေရာမှာ ထည့်ပါ ⚠️⚠️⚠️
+        // ⚠️⚠️⚠️ Script URL ကို ဒီမှာထည့်ပါ ⚠️⚠️⚠️
         var scriptURL = "https://script.google.com/macros/s/AKfycbzT7hgWV9WiTfMpXsyRh6tRO4wczCCKL7B5SRRkwwm2CIeeylQjFcC1MGLYaoBxiYU/exec";
 
-        // App စပွင့်တာနဲ့ Series List ကို လှမ်းဆွဲမယ်
-        window.onload = function() {
-            fetchSeriesList();
-        };
+        window.onload = function() { fetchLists(); };
 
-        // 1. Series List ဆွဲသည့် Function
-        function fetchSeriesList() {
+        // Series List တစ်ခုတည်းကိုပဲ ဆွဲတော့မယ် (Rate မလိုတော့လို့)
+        function fetchLists() {
             var formData = new URLSearchParams();
-            formData.append("action", "getSeries");
+            formData.append("action", "getLists");
 
             fetch(scriptURL, { method: 'POST', body: formData })
             .then(response => response.json())
             .then(data => {
                 var dataList = document.getElementById("series-list");
-                dataList.innerHTML = ""; // Clear existing options
-
-                if (!data || data.length === 0) {
-                    // List မရှိရင် ဘာမှမလုပ်ပါ
-                    return;
+                dataList.innerHTML = ""; 
+                if (data.series && data.series.length > 0) {
+                    document.getElementById("series").placeholder = `ဇာတ်ကားပေါင်း ${data.series.length} ခု ရှိသည်`;
+                    data.series.forEach(name => {
+                        var option = document.createElement("option");
+                        option.value = name;
+                        dataList.appendChild(option);
+                    });
                 }
-
-                // Placeholder ပြောင်းခြင်း
-                document.getElementById("series").placeholder = `ဇာတ်ကားပေါင်း ${data.length} ခု ရှိသည်...`;
-
-                // DataList ထဲထည့်ခြင်း
-                data.forEach(name => {
-                    var option = document.createElement("option");
-                    option.value = name;
-                    dataList.appendChild(option);
-                });
             })
-            .catch(e => console.log("List error: " + e));
+            .catch(e => console.log(e));
         }
 
-        // 2. Data သိမ်းသည့် Function
         function submitData() {
             var series = document.getElementById("series").value;
             var episode = document.getElementById("episode").value;
             var line = document.getElementById("line").value;
             var btn = document.getElementById("btnSave");
 
-            if (!series || !episode || !line) {
-                window.Telegram.WebApp.showAlert("ကျေးဇူးပြု၍ အချက်အလက်များ ပြည့်စုံအောင် ဖြည့်ပါ");
+            if (!series || !episode) {
+                window.Telegram.WebApp.showAlert("Series နှင့် Episode ဖြည့်ပါ");
                 return;
             }
 
@@ -144,19 +90,21 @@
             var formData = new URLSearchParams();
             formData.append("series", series);
             formData.append("episode", episode);
-            formData.append("line", line);
+            formData.append("line", line || "-");
+            
+            // Input မှာ မပါတော့ပေမယ့် Backend က နေရာမရွေ့အောင် အလွတ် (-) ပို့ပေးရပါမယ်
+            formData.append("rate", "-"); 
+            formData.append("sum", "-");
+            
             formData.append("username", tgUser ? tgUser.username : "N/A");
-            formData.append("userid", tgUser ? tgUser.id : "N/A"); // ID ထည့်ပေးလိုက်တယ်
+            formData.append("userid", tgUser ? tgUser.id : "N/A");
 
             fetch(scriptURL, { method: 'POST', body: formData })
             .then(() => {
                 window.Telegram.WebApp.showAlert("Data သိမ်းပြီးပါပြီ!");
-                
-                // Reset Fields
                 document.getElementById("series").value = "";
                 document.getElementById("episode").value = "";
                 document.getElementById("line").value = "";
-                
                 btn.innerText = "Save Data";
                 btn.disabled = false;
             })
@@ -167,18 +115,15 @@
             });
         }
 
-        // 3. History ပြန်ကြည့်သည့် Function (Filter by UserID)
         function loadHistory() {
             var btn = document.getElementById("btnCheck");
             var list = document.getElementById("listArea");
-            
             btn.innerText = "Loading...";
             btn.disabled = true;
             list.innerHTML = ""; 
 
             var formData = new URLSearchParams();
             formData.append("action", "read"); 
-            // ကိုယ့် UserID ကို ပို့ပြီး ကိုယ့် Data ပဲ ပြန်တောင်းမယ်
             formData.append("userid", tgUser ? tgUser.id : "0");
 
             fetch(scriptURL, { method: 'POST', body: formData })
@@ -186,32 +131,29 @@
             .then(data => {
                 btn.innerText = "Refresh History";
                 btn.disabled = false;
+                if (data.length === 0) return list.innerHTML = "Data မရှိပါ";
+
+                list.innerHTML = `<p style='text-align:center;color:gray;font-size:12px'>${data.length} ခု တွေ့သည်</p>`;
                 
-                if (data.length === 0) {
-                    list.innerHTML = "<p style='text-align:center; color:gray'>သင်ဖြည့်ထားသော မှတ်တမ်းမရှိပါ</p>";
-                    return;
-                }
-
-                list.innerHTML = `<p style='text-align:center; color:gray; font-size:12px; margin-bottom:10px;'>သင့်မှတ်တမ်း (${data.length}) ခု တွေ့ရှိသည်</p>`;
-
                 data.forEach(item => {
+                    // Rate နဲ့ Sum က အလွတ်ဖြစ်နေရင် (-) လို့ပဲ ပေါ်နေပါမယ်
+                    // Sheet ထဲမှာ ဝင်ပြင်ထားရင်တော့ ပြင်ထားတဲ့အတိုင်း ပေါ်ပါမယ်
                     var div = document.createElement("div");
                     div.className = "item";
                     div.innerHTML = `
                         <div class="item-header">
-                            <span class="item-series">${item.series}</span>
-                            <span class="item-ep">Ep: ${item.episode}</span>
+                            <strong style="color:#3390ec">${item.series}</strong>
+                            <span class="item-rate">Rating: ${item.rate}</span>
                         </div>
-                        <div>${item.line}</div>
-                        <div class="item-date">${item.date}</div>
+                        <div style="font-weight:500;">Ep: ${item.episode}</div>
+                        <div style="color:#555; margin-top:5px;">"${item.line}"</div>
+                        <div style="margin-top:5px; color:#333; border-top:1px dashed #ddd; padding-top:5px;">
+                            <small>📝 Summary:</small><br>${item.sum}
+                        </div>
+                        <div style="font-size:11px;color:#999;text-align:right; margin-top:5px;">${item.date}</div>
                     `;
                     list.appendChild(div);
                 });
-            })
-            .catch(err => {
-                btn.innerText = "Check My History";
-                btn.disabled = false;
-                window.Telegram.WebApp.showAlert("Connection Error: History ဆွဲမရပါ");
             });
         }
     </script>
