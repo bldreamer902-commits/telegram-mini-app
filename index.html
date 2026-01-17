@@ -91,7 +91,9 @@
                     // Encode data to prevent quotes issue
                     var sEnc = encodeURIComponent(item.series), eEnc = encodeURIComponent(item.episode), lEnc = encodeURIComponent(item.line);
                     
-                    div.innerHTML = `<button class="btn-delete" onclick="deleteData('${sEnc}', '${eEnc}', '${lEnc}')">🗑️</button>
+                    div.innerHTML = `
+                        <button class="btn-delete" onclick="deleteData('${sEnc}', '${eEnc}', '${lEnc}', this)">🗑️</button>
+                        
                         <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:5px; padding-right: 30px;">
                             <strong style="color:#3390ec; font-size:15px;">${item.series}</strong>
                             <span style="font-weight:bold; color:#555;">Ep: ${item.episode}</span>
@@ -114,34 +116,47 @@
             else { box.style.display = "none"; btn.innerText = "Show Total Amount"; btn.style.backgroundColor = "#28a745"; }
         }
 
-        function deleteData(s, e, l) {
+        function deleteData(s, e, l, btnElement) {
             // Decode back the data
             var series = decodeURIComponent(s);
             var ep = decodeURIComponent(e);
             var line = decodeURIComponent(l);
 
-            if(!confirm("Are you sure you want to delete?\n\n" + series + " - Ep " + ep)) return;
+            if(!confirm("ဖျက်မှာ သေချာပါသလား?\n\n" + series + " - Ep " + ep)) return;
             
-            // Show loading...
-            window.Telegram.WebApp.showAlert("Deleting...");
+            // ခလုတ်ကို ခဏ ပိတ်ထားမယ် (Loading ပုံစံပြမယ်)
+            var originalText = btnElement.innerText;
+            btnElement.innerText = "⏳";
+            btnElement.disabled = true;
 
             var fd = new URLSearchParams(); 
             fd.append("action", "delete"); 
             fd.append("userid", tgUser ? tgUser.id : "0");
-            fd.append("series", series); fd.append("episode", ep); fd.append("line", line);
+            fd.append("series", series); 
+            fd.append("episode", ep); 
+            fd.append("line", line);
 
             fetch(scriptURL, { method: 'POST', body: fd })
             .then(r => r.json())
             .then(d => {
                 if(d.status == "deleted") {
-                    window.Telegram.WebApp.showAlert("✅ Deleted successfully.");
+                    // အောင်မြင်ရင် Popup အသေးလေးပြပြီး Refresh လုပ်မယ်
+                    window.Telegram.WebApp.showAlert("✅ ဖျက်ပြီးပါပြီ");
                     loadHistory(); 
+                } else if (d.status == "not_found") {
+                    window.Telegram.WebApp.showAlert("❌ Data မတွေ့ပါ (သို့) ဖျက်ပြီးသား ဖြစ်နေပါမည်။");
+                    loadHistory(); // Refresh လုပ်လိုက်မယ်
                 } else {
-                    window.Telegram.WebApp.showAlert("❌ Delete failed. Data not found.");
+                    window.Telegram.WebApp.showAlert("❌ Error: " + d.message);
+                    // Error တက်ရင် ခလုတ်ပြန်ဖွင့်ပေးမယ်
+                    btnElement.innerText = originalText;
+                    btnElement.disabled = false;
                 }
             })
             .catch(err => {
-                window.Telegram.WebApp.showAlert("Error: " + err);
+                window.Telegram.WebApp.showAlert("Connection Error: " + err);
+                btnElement.innerText = originalText;
+                btnElement.disabled = false;
             });
         }
     </script>
