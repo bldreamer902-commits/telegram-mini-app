@@ -6,17 +6,43 @@
     <title>My Series Log</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #fff; }
+        body { font-family: sans-serif; padding: 20px; background-color: #fff; color:#333; }
         
-        /* Input Form Styles */
         label { display: block; margin-top: 15px; font-weight: 500; font-size: 14px; color: #888; }
         input, button { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
-        button { background-color: #3390ec; color: #fff; border: none; font-weight: bold; cursor: pointer; margin-top: 25px; }
         
-        /* History Styles */
+        /* Buttons Styling */
+        .btn-primary { background-color: #3390ec; color: #fff; border: none; font-weight: bold; cursor: pointer; margin-top: 25px; }
+        .btn-secondary { background-color: #6c757d; color: #fff; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        /* Total Button (Initially Hidden) */
+        .btn-total { 
+            background-color: #28a745; 
+            color: #fff; 
+            border: none; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 10px; 
+            display: none; /* စစချင်း မပေါ်ပါ */
+        }
+        
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        /* History & Item Styles */
         .history-box { margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px; }
         
-        /* Item Box Design */
+        /* Total Amount Box (Initially Hidden) */
+        .total-box {
+            background: #e9f7ef;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+            border: 1px solid #c3e6cb;
+            display: none; /* ခလုတ်နှိပ်မှ ပေါ်မယ် */
+        }
+
         .item { 
             background-color: #f9f9f9; 
             padding: 12px; 
@@ -25,6 +51,27 @@
             font-size: 14px; 
             border-left: 4px solid #3390ec; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        /* Delete Icon Style */
+        .btn-delete {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ffcccc;
+            color: red;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
@@ -42,10 +89,18 @@
     <label>Line / Dialog</label>
     <input type="text" id="line" placeholder="ဇာတ်ဝင်စကား">
     
-    <button onclick="submitData()" id="btnSave">Save Data</button>
+    <button onclick="submitData()" id="btnSave" class="btn-primary">Save Data</button>
 
     <div class="history-box">
-        <button onclick="loadHistory()" id="btnCheck" style="background-color: #6c757d;">Check My History</button>
+        <button onclick="loadHistory()" id="btnCheck" class="btn-secondary">Check My History</button>
+        
+        <button onclick="toggleTotal()" id="btnShowTotal" class="btn-total">Show Total Amount</button>
+
+        <div id="totalDisplay" class="total-box">
+            <span style="font-size:14px;">စုစုပေါင်း ရငွေ</span><br>
+            <b style="font-size:24px;" id="grandTotal">0 MMK</b>
+        </div>
+
         <div id="listArea" style="margin-top:15px;"></div>
     </div>
 
@@ -59,110 +114,144 @@
 
         window.onload = function() { fetchLists(); };
 
+        // 1. Series List ဆွဲခြင်း
         function fetchLists() {
             var formData = new URLSearchParams();
             formData.append("action", "getLists");
-
             fetch(scriptURL, { method: 'POST', body: formData })
-            .then(response => response.json())
-            .then(data => {
-                var dataList = document.getElementById("series-list");
-                dataList.innerHTML = ""; 
-                if (data.series && data.series.length > 0) {
-                    document.getElementById("series").placeholder = `ဇာတ်ကားပေါင်း ${data.series.length} ခု ရှိသည်`;
-                    data.series.forEach(name => {
-                        var option = document.createElement("option");
-                        option.value = name;
-                        dataList.appendChild(option);
-                    });
-                }
-            })
-            .catch(e => console.log(e));
-        }
-
-        function submitData() {
-            var series = document.getElementById("series").value;
-            var episode = document.getElementById("episode").value;
-            var line = document.getElementById("line").value;
-            var btn = document.getElementById("btnSave");
-
-            if (!series || !episode) {
-                window.Telegram.WebApp.showAlert("Series နှင့် Episode ဖြည့်ပါ");
-                return;
-            }
-
-            btn.innerText = "Saving...";
-            btn.disabled = true;
-
-            var formData = new URLSearchParams();
-            formData.append("series", series);
-            formData.append("episode", episode);
-            formData.append("line", line || "-");
-            formData.append("rate", "-"); 
-            formData.append("sum", "-");
-            formData.append("username", tgUser ? tgUser.username : "N/A");
-            formData.append("userid", tgUser ? tgUser.id : "N/A");
-
-            fetch(scriptURL, { method: 'POST', body: formData })
-            .then(() => {
-                window.Telegram.WebApp.showAlert("Data သိမ်းပြီးပါပြီ!");
-                document.getElementById("series").value = "";
-                document.getElementById("episode").value = "";
-                document.getElementById("line").value = "";
-                btn.innerText = "Save Data";
-                btn.disabled = false;
-            })
-            .catch(error => {
-                window.Telegram.WebApp.showAlert("Error: " + error);
-                btn.innerText = "Save Data";
-                btn.disabled = false;
+            .then(r => r.json()).then(d => {
+                var dl = document.getElementById("series-list"); dl.innerHTML = ""; 
+                if (d.series) d.series.forEach(n => { var o = document.createElement("option"); o.value = n; dl.appendChild(o); });
             });
         }
 
+        // 2. Data သိမ်းခြင်း
+        function submitData() {
+            var s = document.getElementById("series").value;
+            var e = document.getElementById("episode").value;
+            var l = document.getElementById("line").value;
+            var btn = document.getElementById("btnSave");
+
+            if (!s || !e) { window.Telegram.WebApp.showAlert("Series နှင့် Episode ဖြည့်ပါ"); return; }
+
+            btn.innerText = "Saving..."; btn.disabled = true;
+
+            var fd = new URLSearchParams();
+            fd.append("series", s); fd.append("episode", e); fd.append("line", l || "-");
+            fd.append("username", tgUser ? tgUser.username : "N/A");
+            fd.append("userid", tgUser ? tgUser.id : "N/A");
+
+            fetch(scriptURL, { method: 'POST', body: fd })
+            .then(r => r.json()).then(d => {
+                window.Telegram.WebApp.showAlert("✅ Saved!\nTotal: " + Number(d.total_amount).toLocaleString() + " MMK");
+                document.getElementById("series").value = "";
+                document.getElementById("episode").value = "";
+                document.getElementById("line").value = "";
+                btn.innerText = "Save Data"; btn.disabled = false;
+            }).catch(err => {
+                window.Telegram.WebApp.showAlert("Error: " + err);
+                btn.innerText = "Save Data"; btn.disabled = false;
+            });
+        }
+
+        // 3. History ကြည့်ခြင်း
         function loadHistory() {
             var btn = document.getElementById("btnCheck");
             var list = document.getElementById("listArea");
-            btn.innerText = "Loading...";
-            btn.disabled = true;
+            var btnTotal = document.getElementById("btnShowTotal");
+            var totalBox = document.getElementById("totalDisplay");
+
+            btn.innerText = "Loading..."; btn.disabled = true;
             list.innerHTML = ""; 
+            
+            // အရင်ဖွင့်ထားတာရှိရင် ပြန်ပိတ်ထားမယ် (Reset)
+            btnTotal.style.display = "none"; 
+            totalBox.style.display = "none";
+            btnTotal.innerText = "Show Total Amount";
+            btnTotal.style.backgroundColor = "#28a745";
 
-            var formData = new URLSearchParams();
-            formData.append("action", "read"); 
-            formData.append("userid", tgUser ? tgUser.id : "0");
+            var fd = new URLSearchParams();
+            fd.append("action", "read"); 
+            fd.append("userid", tgUser ? tgUser.id : "0");
 
-            fetch(scriptURL, { method: 'POST', body: formData })
-            .then(response => response.json())
-            .then(data => {
-                btn.innerText = "Refresh History";
-                btn.disabled = false;
-                if (data.length === 0) return list.innerHTML = "Data မရှိပါ";
-
-                list.innerHTML = `<p style='text-align:center;color:gray;font-size:12px'>${data.length} ခု တွေ့သည်</p>`;
+            fetch(scriptURL, { method: 'POST', body: fd })
+            .then(r => r.json()).then(data => {
+                btn.innerText = "Refresh History"; btn.disabled = false;
                 
-                data.forEach(item => {
+                var history = data.history || [];
+                var total = data.total_amount || 0;
+
+                if (history.length === 0) { list.innerHTML = "<p style='text-align:center'>Data မရှိပါ</p>"; return; }
+
+                // Total တန်ဖိုးထည့်မယ် (ဒါပေမယ့် မပြသေးဘူး)
+                document.getElementById("grandTotal").innerText = Number(total).toLocaleString() + " MMK";
+                
+                // Show Total ခလုတ်ကို ဖော်မယ်
+                btnTotal.style.display = "block";
+
+                list.innerHTML = `<p style='text-align:center;color:gray;font-size:12px'>${history.length} ခု တွေ့သည်</p>`;
+                
+                history.forEach(item => {
                     var div = document.createElement("div");
                     div.className = "item";
                     
-                    // ဒီနေရာမှာ Layout ပြင်ထားပါတယ်
+                    var delParams = `"${item.series}", "${item.episode}", "${item.line}"`;
+
                     div.innerHTML = `
-                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:5px;">
+                        <button class="btn-delete" onclick='deleteData(${delParams})'>🗑️</button>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:5px; padding-right: 30px;">
                             <strong style="color:#3390ec; font-size:15px;">${item.series}</strong>
                             <span style="font-weight:bold; color:#555;">Ep: ${item.episode}</span>
                         </div>
-                        
                         <div style="font-size:13px; color:#333; background:#fff; padding:8px; border-radius:6px; border:1px solid #e0e0e0;">
-                            ${item.line} <span style="color:#aaa;">×</span> 
-                            <b>${item.rate}</b> <span style="color:#aaa;">=</span> 
-                            ${item.sum}
+                            Line: ${item.line} <span style="color:#aaa;">|</span> 
+                            Rate: ${item.rate} <span style="color:#aaa;">=</span> 
+                            <span style="color:#28a745; font-weight:bold;">${Number(item.sum).toLocaleString()}</span>
                         </div>
-
-                        <div style="font-size:10px; color:#aaa; text-align:right; margin-top:5px;">
-                            ${item.date}
-                        </div>
+                        <div style="font-size:10px; color:#aaa; text-align:right; margin-top:5px;">${item.date}</div>
                     `;
                     list.appendChild(div);
                 });
             });
+        }
+
+        // 4. Total အဖွင့်အပိတ် လုပ်ခြင်း
+        function toggleTotal() {
+            var box = document.getElementById("totalDisplay");
+            var btn = document.getElementById("btnShowTotal");
+            if (box.style.display === "none") {
+                box.style.display = "block"; // Show
+                btn.innerText = "Hide Total Amount";
+                btn.style.backgroundColor = "#dc3545"; // အနီရောင်ပြောင်း
+            } else {
+                box.style.display = "none"; // Hide
+                btn.innerText = "Show Total Amount";
+                btn.style.backgroundColor = "#28a745"; // အစိမ်းရောင်ပြန်ပြောင်း
+            }
+        }
+
+        // 5. Data ဖျက်ခြင်း
+        function deleteData(series, ep, line) {
+            if(!confirm("Are you sure you want to delete?\n\n" + series + " - Ep " + ep)) return;
+
+            window.Telegram.WebApp.showAlert("Deleting...");
+            
+            var fd = new URLSearchParams();
+            fd.append("action", "delete");
+            fd.append("userid", tgUser ? tgUser.id : "0");
+            fd.append("series", series);
+            fd.append("episode", ep);
+            fd.append("line", line);
+
+            fetch(scriptURL, { method: 'POST', body: fd })
+            .then(r => r.json()).then(d => {
+                if(d.status == "deleted") {
+                    window.Telegram.WebApp.showAlert("✅ Deleted successfully.");
+                    loadHistory(); // စာရင်းပြန်ဆွဲမယ်
+                } else {
+                    window.Telegram.WebApp.showAlert("❌ Delete failed. Data not found.");
+                }
+            }).catch(e => window.Telegram.WebApp.showAlert("Error: " + e));
         }
     </script>
 </body>
